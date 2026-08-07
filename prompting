@@ -1,0 +1,1 @@
+"Hi! I am resuming work on BridgeTutor, a mastery-based learning AI agent for high school algebra. I have a 4-file Python structure (main.py, curriculum.py, engine.py, tracker.py) that uses SymPy for math validation and SQLite for a state tracker database. Let's pick back up from where we left off."
