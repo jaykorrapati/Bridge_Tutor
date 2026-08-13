@@ -2,23 +2,19 @@
 """
 Diagnostic Hint Engine for BridgeTutor AI Agent.
 Analyzes student errors using SymPy mathematical structure comparison to output intelligent hints.
+Enforces strict mathematical character sanitization and keyword blocking.
 """
 
+import re
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application, convert_xor
+
+SAFE_MATH_REGEX = re.compile(r'^[0-9a-zA-Z\s\+\-\*\/\^\(\)\=\,\.]+$')
+BLOCKED_KEYWORDS = {'import', 'exec', 'eval', 'lambda', 'open', 'system', 'os', 'sys', '__', 'builtins', 'globals', 'locals'}
 
 def diagnose_and_hint(eval_type, target_value, student_raw_input, step_explanation=None):
     """
     Analyzes student answer against target solution and produces tiered feedback & diagnostic guidance.
-    
-    Returns:
-    {
-        "is_valid_format": bool,
-        "diagnosis": str,
-        "hint_level1": str,  # Conceptual Strategy
-        "hint_level2": str,  # Specific Actionable Hint
-        "hint_level3": str   # Worked Solution Step
-    }
     """
     clean_input = str(student_raw_input).strip()
     if not clean_input:
@@ -30,7 +26,16 @@ def diagnose_and_hint(eval_type, target_value, student_raw_input, step_explanati
             "hint_level3": f"Target solution: {target_value}"
         }
 
-    # Handle equation inputs (e.g. x = 4)
+    lower_input = clean_input.lower()
+    if any(k in lower_input for k in BLOCKED_KEYWORDS) or not SAFE_MATH_REGEX.match(clean_input):
+        return {
+            "is_valid_format": False,
+            "diagnosis": "Invalid format or characters detected.",
+            "hint_level1": "Use standard numbers, fractions like 3/2, or equations like x = 4.",
+            "hint_level2": "Avoid special programming symbols or unclosed parentheses.",
+            "hint_level3": f"Target solution: {target_value}"
+        }
+
     extracted_val = clean_input
     if "=" in clean_input:
         parts = clean_input.split("=")
@@ -47,7 +52,6 @@ def diagnose_and_hint(eval_type, target_value, student_raw_input, step_explanati
 
     try:
         if eval_type == "coordinate":
-            # Parsing (x, y) coordinates
             target_str = str(target_value).replace(" ", "")
             student_str = clean_input.replace(" ", "")
             
@@ -68,8 +72,8 @@ def diagnose_and_hint(eval_type, target_value, student_raw_input, step_explanati
                 "hint_level3": f"Full Solution: {step_explanation or target_value}"
             }
 
-        target_parsed = parse_expr(str(target_value).replace(" ", ""), local_dict={}, transformations=transformations, evaluate=False)
-        student_parsed = parse_expr(extracted_val.replace(" ", ""), local_dict={}, transformations=transformations, evaluate=False)
+        target_parsed = parse_expr(str(target_value).replace(" ", ""), transformations=transformations, evaluate=False)
+        student_parsed = parse_expr(extracted_val.replace(" ", ""), transformations=transformations, evaluate=False)
 
         diff = sp.simplify(student_parsed - target_parsed)
         sum_check = sp.simplify(student_parsed + target_parsed)
