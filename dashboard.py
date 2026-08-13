@@ -1,68 +1,76 @@
 # dashboard.py
+"""
+CLI Analytics Dashboard for BridgeTutor AI Agent.
+Generates terminal reports on student progress, mastery rates, active knowledge gaps, and attempt logs.
+"""
+
 import sqlite3
 import curriculum as curr
+import tracker as track
 
-DB_NAME = "student_tracker.db"
+def generate_student_report(student_id="student_cli_demo"):
+    """Fetches state and attempt logs from SQLite to print a visual terminal dashboard."""
+    data = track.get_student_summary(student_id)
+    state_rows = data["states"]
+    recent_attempts = data["recent_attempts"]
 
-def generate_student_report(student_id):
-    """Fetches tracking data from SQLite and prints a learning gap report."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    # Fetch all records for the targeted student
-    cursor.execute("""
-        SELECT concept_id, status, attempts, last_tested 
-        FROM student_state 
-        WHERE student_id = ?
-    """, (student_id,))
-    rows = cursor.fetchall()
-    conn.close()
-    
-    if not rows:
+    if not state_rows:
         print(f"\n📊 [Dashboard Error]: No learning history found for Student ID: '{student_id}'.")
-        print("💡 Tip: Try playing through a module in main.py first to populate the database.")
+        print("💡 Tip: Play through a practice session in main.py first to populate tracker data.")
         return
 
-    # Calculate metrics using basic loop computation
-    total_modules_tracked = len(rows)
-    mastered_count = sum(1 for row in rows if row[1] == "mastered")
-    mastery_rate = (mastered_count / total_modules_tracked) * 100
-    
+    total_topics = len(curr.ALGEBRA_GRAPH)
+    attempted_topics = len(state_rows)
+    mastered_count = sum(1 for row in state_rows if row[1] == "mastered")
+    mastery_rate = (mastered_count / total_topics) * 100
+
+    # Progress bar rendering
+    bar_length = 20
+    filled_length = int(bar_length * mastered_count // total_topics)
+    bar = "█" * filled_length + "░" * (bar_length - filled_length)
+
     print(f"\n==================================================")
     print(f"📈 LEARNING ANALYTICS DASHBOARD FOR: {student_id}")
     print(f"==================================================")
-    print(f"• Curriculum Coverage: {total_modules_tracked} topics attempted")
-    print(f"• Mastery Progress Score: {mastery_rate:.1f}%")
+    print(f"• Overall Mastery Progress: [{bar}] {mastery_rate:.1f}% ({mastered_count}/{total_topics} Topics Mastered)")
+    print(f"• Topics Attempted: {attempted_topics} of {total_topics} curriculum nodes")
     print(f"--------------------------------------------------")
-    
-    print("\n🔍 ACTIVE KNOWLEDGE GAPS (Needs Review):")
+
+    print("\n🔍 ACTIVE KNOWLEDGE GAPS (In Progress):")
     gaps_found = False
-    for row in rows:
-        concept_id, status, attempts, last_tested = row
+    for row in state_rows:
+        concept_id, status, attempts, correct_count, last_tested = row
         if status == "in_progress":
             gaps_found = True
-            friendly = curr.ALGEBRA_GRAPH[concept_id]["friendly_name"]
-            video = curr.ALGEBRA_GRAPH[concept_id]["resources"]
+            node = curr.ALGEBRA_GRAPH.get(concept_id, {})
+            friendly = node.get("friendly_name", concept_id)
+            video = node.get("resources", {"title": "Resource Guide", "url": "N/A"})
             print(f"  ❌ {friendly} ({concept_id})")
-            print(f"     └─ Status: Stuck after {attempts} attempt(s) | Last active: {last_tested}")
+            print(f"     ├─ Score: {correct_count}/{attempts} correct | Last active: {last_tested}")
             print(f"     └─ Recommended Resource: {video['title']} -> {video['url']}\n")
-            
-    if not gaps_found:
-        print("  ✅ Amazing! No current knowledge gaps detected. Keep moving forward!")
 
-    print("\n🏆 COMPLETED MASTERY BLOCKS:")
+    if not gaps_found:
+        print("  ✅ Great job! No active knowledge gaps detected.")
+
+    print("\n🏆 MASTERED CURRICULUM BLOCKS:")
     mastered_found = False
-    for row in rows:
-        concept_id, status, attempts, _ = row
+    for row in state_rows:
+        concept_id, status, attempts, correct_count, _ = row
         if status == "mastered":
             mastered_found = True
-            friendly = curr.ALGEBRA_GRAPH[concept_id]["friendly_name"]
-            print(f"  ⭐ {friendly} (Solid understanding after {attempts} attempt(s))")
-            
+            friendly = curr.ALGEBRA_GRAPH.get(concept_id, {}).get("friendly_name", concept_id)
+            print(f"  ⭐ {friendly} ({correct_count}/{attempts} correct - Solid understanding)")
+
     if not mastered_found:
         print("  (No mastered modules recorded yet.)")
+
+    if recent_attempts:
+        print("\n📜 RECENT PRACTICE ATTEMPTS:")
+        for concept_id, question, student_ans, is_corr, ts in recent_attempts[:5]:
+            icon = "✅" if is_corr else "❌"
+            print(f"  {icon} [{ts}] {concept_id}: '{student_ans}' on question '{question[:40]}...'")
+
     print(f"==================================================\n")
 
 if __name__ == "__main__":
-    # Runs a report on our standard test student ID
-    generate_student_report(student_id="highschool_student_1")
+    generate_student_report("student_cli_demo")

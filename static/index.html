@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BridgeTutor AI Agent — High School Algebra Mastery</title>
+  <!-- KaTeX CSS & JS for LaTeX Math Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- TOP NAVIGATION BAR -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo-icon">🌉</div>
+        <div class="brand-text">
+          <h1>BridgeTutor <span class="badge-ai">AI AGENT</span></h1>
+          <p class="subtitle">Algebra Mastery & Knowledge Gap Diagnostics</p>
+        </div>
+      </div>
+
+      <div class="user-controls">
+        <div class="student-selector">
+          <label for="studentIdSelect">Student Profile:</label>
+          <select id="studentIdSelect">
+            <option value="highschool_student_1">Student #1 (High School)</option>
+            <option value="student_cli_demo">Student #2 (Demo)</option>
+            <option value="alex_algebra">Alex (Algebra 1)</option>
+          </select>
+        </div>
+
+        <div class="mastery-pill">
+          <span class="pill-label">Mastery Progress</span>
+          <span id="masteryScore" class="pill-value">0.0%</span>
+        </div>
+
+        <button id="btnResetData" class="btn-secondary btn-icon" title="Reset Student History">
+          🔄 Reset State
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT LAYOUT -->
+    <main class="main-layout">
+      
+      <!-- LEFT SIDEBAR: CONCEPT KNOWLEDGE GRAPH DAG -->
+      <aside class="sidebar-graph">
+        <div class="sidebar-header">
+          <h2>🗺️ Curriculum Knowledge Graph</h2>
+          <p>Click any unlocked concept node to practice</p>
+        </div>
+
+        <div id="graphContainer" class="graph-nodes-list">
+          <!-- Dynamically populated concept nodes -->
+          <div class="loading-spinner">Loading Knowledge Graph...</div>
+        </div>
+      </aside>
+
+      <!-- CENTER & RIGHT: PRACTICE STUDIO & DIAGNOSTIC PANEL -->
+      <section class="practice-studio">
+        
+        <!-- ACTIVE CONCEPT HEADER CARD -->
+        <div class="card concept-card">
+          <div class="concept-header-top">
+            <span id="conceptTag" class="tag tag-unlocked">UNLOCKED</span>
+            <span id="conceptEvalType" class="tag tag-eval">Numeric</span>
+          </div>
+          <h2 id="conceptTitle">Select a Concept Node</h2>
+          <p id="conceptDesc">Choose a node from the curriculum map on the left to begin practice.</p>
+
+          <div id="resourceBox" class="resource-box hidden">
+            <span>📺 Video Resource:</span>
+            <a id="resourceLink" href="#" target="_blank" rel="noopener">Watch Tutor Video</a>
+          </div>
+        </div>
+
+        <!-- PROBLEM CARD -->
+        <div class="card problem-card">
+          <div class="problem-header">
+            <h3>📝 Practice Problem</h3>
+            <button id="btnNewProblem" class="btn-text">🎲 New Random Problem</button>
+          </div>
+
+          <div id="questionContainer" class="question-display">
+            <p class="placeholder-text">Please select an unlocked topic from the curriculum graph.</p>
+          </div>
+
+          <!-- INPUT FORM -->
+          <form id="answerForm" class="answer-form">
+            <div class="input-group">
+              <input type="text" id="studentAnswerInput" placeholder="Enter your answer (e.g. -5, 3/2, x = 4, (3, 2))..." autocomplete="off" required disabled />
+              <button type="submit" id="btnSubmitAnswer" class="btn-primary" disabled>Submit Answer</button>
+            </div>
+            
+            <div class="action-row">
+              <button type="button" id="btnGetHint" class="btn-secondary" disabled>💡 Need a Hint?</button>
+              <span id="attemptCounter" class="attempt-counter"></span>
+            </div>
+          </form>
+
+          <!-- FEEDBACK & DIAGNOSTIC PANEL -->
+          <div id="feedbackAlert" class="alert-box hidden">
+            <div id="feedbackStatus" class="alert-title"></div>
+            <div id="feedbackText" class="alert-body"></div>
+          </div>
+
+          <!-- HINT ACCORDION BOX -->
+          <div id="hintAccordion" class="hint-accordion hidden">
+            <div class="accordion-header">💡 Diagnostic AI Hints</div>
+            
+            <div class="accordion-item">
+              <div class="hint-title">Level 1: Conceptual Strategy</div>
+              <div id="hintLevel1" class="hint-body"></div>
+            </div>
+
+            <div class="accordion-item">
+              <div class="hint-title">Level 2: Step-by-Step Guidance</div>
+              <div id="hintLevel2" class="hint-body"></div>
+            </div>
+
+            <div class="accordion-item">
+              <div class="hint-title">Level 3: Full Solution Derivation</div>
+              <div id="hintLevel3" class="hint-body math-solution"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- LOWER PANEL: ANALYTICS & KNOWLEDGE GAP DRAWER -->
+        <div class="card analytics-card">
+          <div class="analytics-header">
+            <h3>📊 Learning Analytics & Knowledge Gap Dashboard</h3>
+            <button id="btnRefreshAnalytics" class="btn-text">🔄 Refresh Stats</button>
+          </div>
+
+          <div class="analytics-grid">
+            <div class="metric-box">
+              <div class="metric-num" id="statMastered">0 / 10</div>
+              <div class="metric-lbl">Topics Mastered</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-num" id="statRate">0%</div>
+              <div class="metric-lbl">Mastery Score</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-num" id="statGaps">0</div>
+              <div class="metric-lbl">Active Gaps</div>
+            </div>
+          </div>
+
+          <!-- ACTIVE GAPS LIST -->
+          <div class="gap-section">
+            <h4>🔍 Active Knowledge Gaps</h4>
+            <div id="gapsList" class="gaps-list">
+              <p class="empty-state">No active knowledge gaps recorded. Excellent progress!</p>
+            </div>
+          </div>
+
+          <!-- RECENT HISTORY TABLE -->
+          <div class="history-section">
+            <h4>📜 Recent Practice Attempts</h4>
+            <div class="table-responsive">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>Result</th>
+                    <th>Topic</th>
+                    <th>Your Answer</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                  <tr><td colspan="4" class="empty-state">No recent practice attempts.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
