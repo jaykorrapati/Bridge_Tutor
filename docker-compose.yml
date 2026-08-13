@@ -1,0 +1,13 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  bridgetutor:
+    build: .
+    container_name: bridgetutor_app
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount student_tracker.db to persist database outside container
+      - ./student_tracker.db:/app/student_tracker.db
+    restart: unless-stopped
